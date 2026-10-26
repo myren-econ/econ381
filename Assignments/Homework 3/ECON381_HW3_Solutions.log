@@ -1,0 +1,411 @@
+------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  /Users/mren7/Library/CloudStorage/Dropbox/Teaching/Econ 381/Fall 2026/Assignments/Assignment 3/ECON381_HW3_
+> Solutions.log
+  log type:  text
+ opened on:  13 Oct 2026, 14:48:07
+
+. 
+. use "Earnings_and_Height.dta", clear
+
+. describe
+
+Contains data from Earnings_and_Height.dta
+ Observations:        17,870                  
+    Variables:            11                  14 Oct 2014 16:01
+------------------------------------------------------------------------------------------------------------------------
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+------------------------------------------------------------------------------------------------------------------------
+sex             byte    %9.0g      sex        Sex
+age             byte    %12.0g     age        Age
+mrd             byte    %24.0g     mrd        Marital Status
+educ            byte    %9.0g                 Education of Individual
+cworker         byte    %18.0g     cworker    Class of Worker
+region          byte    %11.0g     region     Region
+race            float   %18.0g     race       race/ethnicity
+earnings        float   %9.0g                 
+height          float   %9.0g                 
+weight          float   %9.0g                 
+occupation      float   %9.0g                 
+------------------------------------------------------------------------------------------------------------------------
+Sorted by: 
+
+. 
+. * E4.2(a): Median height.
+. summarize height, detail
+
+                           height
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           59             48
+ 5%           61             48
+10%           62             49       Obs              17,870
+25%           64             49       Sum of wgt.      17,870
+
+50%           67                      Mean           66.96335
+                        Largest       Std. dev.        3.9675
+75%           70             80
+90%           72             81       Variance       15.74106
+95%           74             83       Skewness       .1463735
+99%           76             84       Kurtosis        2.51327
+
+. display as text "Median height (inches): " as result r(p50)
+Median height (inches): 67
+
+. * Answer: The median height is 67 inches.
+. 
+. * E4.2(b)(i): Mean annual earnings for workers at most 67 inches tall.
+. summarize earnings if height <= 67
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    earnings |     10,114    44488.44    26700.39   4726.391   84054.75
+
+. scalar short_mean = r(mean)
+
+. scalar short_n = r(N)
+
+. display as text "Shorter group: N = " as result short_n as text "; mean = " as result %12.2f short_mean
+Shorter group: N = 10114; mean =     44488.44
+
+. * Answer: Mean annual earnings are $44,488.44 (10,114 workers).
+. 
+. * E4.2(b)(ii): Mean annual earnings for workers taller than 67 inches.
+. summarize earnings if height > 67 & !missing(height)
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    earnings |      7,756    49987.88    26896.56   4726.391   84054.75
+
+. scalar tall_mean = r(mean)
+
+. scalar tall_n = r(N)
+
+. display as text "Taller group: N = " as result tall_n as text "; mean = " as result %12.2f tall_mean
+Taller group: N = 7756; mean =     49987.88
+
+. * Answer: Mean annual earnings are $49,987.88 (7,756 workers).
+. 
+. * E4.2(b)(iii): Compare the two means; a CI is not requested in this version.
+. display as text "Difference (taller minus shorter): " as result %12.2f (tall_mean - short_mean)
+Difference (taller minus shorter):      5499.44
+
+. * Answer: Taller workers earn $5,499.44 more per year on average.
+. * These are descriptive group differences, not an identified causal effect.
+. 
+. * E4.2(c): Scatterplot and the horizontal bands.
+. twoway (scatter earnings height) ///
+>        (lfit earnings height), ///
+>        title("Earnings and height") ///
+>        xtitle("Height (inches)") ytitle("Annual earnings (2012 dollars)") ///
+>        legend(order(1 "Workers" 2 "OLS fitted line")) 
+
+. graph export "ECON381_HW3_Solutions_Graph.pdf", replace
+file /Users/mren7/Library/CloudStorage/Dropbox/Teaching/Econ 381/Fall 2026/Assignments/Assignment
+    3/ECON381_HW3_Solutions_Graph.pdf saved as PDF format
+
+. * Answer: Earnings were reported in 23 brackets. Case and Paxson assigned
+. * an estimated average earnings value to each bracket and converted the
+. * values to 2012 dollars. Workers in the same bracket share the same value,
+. * so the scatterplot has horizontal bands. These are grouped income data.
+. 
+. * E4.2(d)(i): Pooled regression and estimated slope.
+. regress earnings height, robust
+
+Linear regression                               Number of obs     =     17,870
+                                                F(1, 17868)       =     197.19
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0109
+                                                Root MSE          =      26777
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   707.6716   50.39502    14.04   0.000     608.8924    806.4507
+       _cons |  -512.7336   3379.864    -0.15   0.879    -7137.594    6112.126
+------------------------------------------------------------------------------
+
+. display as text "Intercept: " as result %12.4f _b[_cons]
+Intercept:    -512.7336
+
+. display as text "R-squared: " as result %10.6f e(r2)
+R-squared:   0.010875
+
+. display as text "SER: " as result %12.4f e(rmse)
+SER:   26777.2396
+
+. * Answer: Fitted earnings = -512.7336 + 707.6716 * height (in inches).
+. * Each additional inch is associated with $707.67 higher annual earnings.
+. 
+. * E4.2(d)(ii): Predictions at the three specified heights.
+. foreach h in 67 70 65 {
+  2.     display as text "Predicted annual earnings at height `h': " as result %12.2f (_b[_cons] + _b[height] * `h')
+  3. }
+Predicted annual earnings at height 67:     46901.26
+Predicted annual earnings at height 70:     49024.28
+Predicted annual earnings at height 65:     45485.92
+
+. * Answer: 67 inches: $46,901.26; 70 inches: $49,024.28;
+. * 65 inches: $45,485.92. Predictions use the unrounded coefficients.
+. 
+. * E4.2(e): Change height units using exactly 2.54 centimeters per inch.
+. generate double height_cm = 2.54 * height
+
+. regress earnings height_cm, robust
+
+Linear regression                               Number of obs     =     17,870
+                                                F(1, 17868)       =     197.19
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0109
+                                                Root MSE          =      26777
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   height_cm |   278.6108   19.84056    14.04   0.000     239.7214    317.5003
+       _cons |  -512.7336   3379.864    -0.15   0.879    -7137.594    6112.126
+------------------------------------------------------------------------------
+
+. display as text "Intercept: " as result %12.4f _b[_cons]
+Intercept:    -512.7336
+
+. display as text "R-squared: " as result %10.6f e(r2)
+R-squared:   0.010875
+
+. display as text "SER: " as result %12.4f e(rmse)
+SER:   26777.2396
+
+. * Answer: Slope = 707.6716 / 2.54 = $278.6108 per centimeter.
+. * Intercept = -512.7336; R-squared = 0.0108753; SER = $26,777.24.
+. * Fitted earnings and residuals are unchanged by rescaling the regressor.
+. 
+. * E4.2(f): Female workers (sex = 0).
+. regress earnings height if sex == 0, robust
+
+Linear regression                               Number of obs     =      9,974
+                                                F(1, 9972)        =      27.44
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0027
+                                                Root MSE          =      26801
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   511.2222    97.5846     5.24   0.000     319.9367    702.5077
+       _cons |   12650.86   6299.151     2.01   0.045     303.2497    24998.47
+------------------------------------------------------------------------------
+
+. * Answer (i): The slope is $511.22 per inch.
+. * Answer (ii): A woman 1 inch taller than the female sample mean is predicted
+. * to earn $511.22 more than female sample-average annual earnings. OLS with
+. * an intercept passes through the group means of height and earnings.
+. 
+. * E4.2(g): Male workers (sex = 1).
+. regress earnings height if sex == 1, robust
+
+Linear regression                               Number of obs     =      7,896
+                                                F(1, 7894)        =     174.76
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0209
+                                                Root MSE          =      26671
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |    1306.86   98.85688    13.22   0.000     1113.074    1500.646
+       _cons |  -43130.34   6925.011    -6.23   0.000     -56705.2   -29555.49
+------------------------------------------------------------------------------
+
+. * Answer (i): The slope is $1,306.86 per inch.
+. * Answer (ii): A man 1 inch taller than the male sample mean is predicted
+. * to earn $1,306.86 more than male sample-average annual earnings.
+. 
+. * E4.2(h): The zero conditional mean assumption is not established here.
+. * Answer: Height may be correlated with omitted determinants of earnings,
+. * such as family background, education, health, sex, or physical strength.
+. * There is no basis for assuming E(u_i | Height_i) = 0 solely from this
+. * regression. A positive slope need not measure a causal effect of height.
+. 
+. 
+. * E5.1(a): All workers.
+. regress earnings height, robust
+
+Linear regression                               Number of obs     =     17,870
+                                                F(1, 17868)       =     197.19
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0109
+                                                Root MSE          =      26777
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   707.6716   50.39502    14.04   0.000     608.8924    806.4507
+       _cons |  -512.7336   3379.864    -0.15   0.879    -7137.594    6112.126
+------------------------------------------------------------------------------
+
+. * Answer: Slope = 707.67, robust SE = 50.40, statistic = 14.0425.
+. * Normal p-value = 8.56e-45; reject zero slope at 5%.
+. * The 95% normal CI is [$608.90, $806.45] per inch.
+. 
+. * E5.1(b): Women.
+. regress earnings height if sex == 0, robust
+
+Linear regression                               Number of obs     =      9,974
+                                                F(1, 9972)        =      27.44
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0027
+                                                Root MSE          =      26801
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   511.2222    97.5846     5.24   0.000     319.9367    702.5077
+       _cons |   12650.86   6299.151     2.01   0.045     303.2497    24998.47
+------------------------------------------------------------------------------
+
+. * Answer: Slope = 511.22, robust SE = 97.58, statistic = 5.2388.
+. * Normal p-value = 1.62e-7; reject zero slope at 5%.
+. * The 95% normal CI is [$319.96, $702.49] per inch.
+. 
+. * E5.1(c): Men.
+. regress earnings height if sex == 1, robust
+
+Linear regression                               Number of obs     =      7,896
+                                                F(1, 7894)        =     174.76
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0209
+                                                Root MSE          =      26671
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |    1306.86   98.85688    13.22   0.000     1113.074    1500.646
+       _cons |  -43130.34   6925.011    -6.23   0.000     -56705.2   -29555.49
+------------------------------------------------------------------------------
+
+. * Answer: Slope = 1,306.86, robust SE = 98.86, statistic = 13.2197.
+. * Normal p-value = 6.75e-40; reject zero slope at 5%.
+. * The 95% normal CI is [$1,113.10, $1,500.62] per inch.
+. 
+. * E5.1(d) is not assigned; the original part (e) retains its textbook label.
+. 
+. * E5.1(e): Restrict to occupations in which physical strength is less likely
+. * to be important: executives/managers, professionals, technicians, sales,
+. * and administrative workers (occupation codes 1 through 5).
+. regress earnings height if (1<=occupation) & (occupation<=5), robust
+
+Linear regression                               Number of obs     =     11,020
+                                                F(1, 11018)       =     162.40
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0143
+                                                Root MSE          =      26627
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   829.7842   65.11383    12.74   0.000     702.1495     957.419
+       _cons |  -2149.519   4346.377    -0.49   0.621     -10669.2     6370.16
+------------------------------------------------------------------------------
+
+. * Answer: N = 11,020; slope = 829.78; robust SE = 65.11;
+. * statistic = 12.7436; normal p-value = 3.38e-37;
+. * 95% normal CI = [$702.16, $957.41] per inch.
+. * The positive association persists. Physical strength alone does not
+. * explain it. This restriction does not establish a causal height effect.
+. 
+. * Additional detail: report each of the five low-strength occupations.
+. forvalues k = 1/5 {
+  2.     regress earnings height if occupation == `k', robust
+  3. }
+
+Linear regression                               Number of obs     =      1,906
+                                                F(1, 1904)        =       9.41
+                                                Prob > F          =     0.0022
+                                                R-squared         =     0.0048
+                                                Root MSE          =      26133
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   469.4581   153.0484     3.07   0.002      169.298    769.6182
+       _cons |   27565.57    10293.1     2.68   0.007     7378.623    47752.51
+------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =      3,158
+                                                F(1, 3156)        =      28.74
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0089
+                                                Root MSE          =      25350
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   622.7552   116.1728     5.36   0.000     394.9733     850.537
+       _cons |   19412.91    7803.09     2.49   0.013     4113.271    34712.56
+------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =        875
+                                                F(1, 873)         =       9.30
+                                                Prob > F          =     0.0024
+                                                R-squared         =     0.0104
+                                                Root MSE          =      25094
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   649.7218   213.0435     3.05   0.002     231.5845    1067.859
+       _cons |   6374.936   14250.94     0.45   0.655    -21595.17    34345.04
+------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =      1,957
+                                                F(1, 1955)        =      87.83
+                                                Prob > F          =     0.0000
+                                                R-squared         =     0.0417
+                                                Root MSE          =      26665
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   1372.385   146.4424     9.37   0.000     1085.185    1659.584
+       _cons |  -44056.47   9871.104    -4.46   0.000    -63415.46   -24697.48
+------------------------------------------------------------------------------
+
+Linear regression                               Number of obs     =      3,124
+                                                F(1, 3122)        =       2.34
+                                                Prob > F          =     0.1260
+                                                R-squared         =     0.0007
+                                                Root MSE          =      25637
+
+------------------------------------------------------------------------------
+             |               Robust
+    earnings | Coefficient  std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   201.2159   131.4649     1.53   0.126    -56.55055    458.9823
+       _cons |   32039.31   8614.453     3.72   0.000     15148.75    48929.88
+------------------------------------------------------------------------------
+
+. * Their slopes are about $469.46, $622.76, $649.72, $1,372.38, and $201.22.
+. * The first four are significant at 5%; administration is not (p about 0.13).
+. * Other reasonable occupation restrictions can also receive credit if
+. * their choice and interpretation are explained.
+. 
+. log close
+      name:  <unnamed>
+       log:  /Users/mren7/Library/CloudStorage/Dropbox/Teaching/Econ 381/Fall 2026/Assignments/Assignment 3/ECON381_HW3_
+> Solutions.log
+  log type:  text
+ closed on:  13 Oct 2026, 14:48:11
+------------------------------------------------------------------------------------------------------------------------
